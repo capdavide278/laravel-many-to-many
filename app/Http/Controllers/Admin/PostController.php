@@ -7,9 +7,25 @@ use App\Models\Post;
 use App\Models\Category;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Unique;
 
 class PostController extends Controller
 {
+    protected $validation_rules = [
+        'title'=> 'required|string|max:100',
+        'slug' => [
+            'required',
+            'string',
+            'max:100',
+        ],
+        'category_id' => 'required|integer|exists:categories,id',
+        'tags' => 'nullable|array',
+        'tags.*' => 'integer|exists:tags,id',
+        'image'  => 'required_without:content|nullable|url',
+        'content' => 'required_without:image|nullable|string|max:5000',
+        'excerpt' => 'nullable|string|max:200',
+    ];
     /**
      * Display a listing of the resource.
      *
@@ -47,17 +63,9 @@ class PostController extends Controller
      */
     public function store(Request $request)
     {
+        $this->validation_rules['slug'][] = 'unique:posts';
                // validation
-               $request->validate([
-                'title'=> 'required|string|max:100',
-                'slug' => 'required|string|max:100|unique:posts',
-                'category_id' => 'required|integer|exists:categories,id',
-                'tags' => 'nullable|array',
-                'tags.*' => 'integer|exists:tags,id',
-                'image'  => 'required_without:content|nullable|url',
-                'content' => 'required_without:image|nullable|string|max:5000',
-                'excerpt' => 'nullable|string|max:200',
-            ]);
+               $request->validate($this->validation_rules);
     
             $data = $request->all();
             dump($data);
@@ -66,7 +74,7 @@ class PostController extends Controller
             $post = Post::create($data);
             $post->tags()->sync($data['tags']);
     
-            return redirect()->route('admin.posts.show', ['post' => $post->id]);
+            return redirect()->route('admin.posts.show', ['post' => $post]);
             // redirect
     }
 
@@ -110,7 +118,14 @@ class PostController extends Controller
      */
     public function update(Request $request, Post $post)
     {
-        //
+        $this->validation_rules['slug'][] = Rule::unique('posts')->ignore($post->id);
+        // validation
+        $request->validate($this->validation_rules);
+
+        $post->update($request->all());
+
+        return redirect()->route('admin.posts.show', ['post' => $post]);
+
     }
 
     /**

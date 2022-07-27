@@ -1,7 +1,7 @@
 @extends('admin.layouts.base')
 
 @section('mainContent')
-    <h1>Edit post</h1>
+   {{--  <h1>Edit post</h1> --}}
    {{--  @method('PUT')
         @csrf
 
